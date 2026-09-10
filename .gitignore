@@ -1,0 +1,8 @@
+# credentials
+config.py
+
+# py venv
+.venv/
+
+# temp file
+cache_file/
