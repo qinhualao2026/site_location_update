@@ -1,13 +1,31 @@
 import requests, csv
 from io import StringIO
-from config import USER_NAME, PASSWORD, LOGIN_URL,EXPORT_URL
-from .csv_reader import last_id
+from config import USER_NAME, PASSWORD, LOGIN_URL,EXPORT_URL, LAST_REGISTRATION
 
+# read cache file and get the first ID value as the last id
+def get_last_id():
+    with open(
+        LAST_REGISTRATION, 
+        'r', 
+        encoding='utf-8-sig'
+    ) as cache_file:
+
+        # skip table header
+        next(cache_file)
+
+        reader = csv.reader(cache_file)
+        data = list(reader)
+
+        last_id = int(data[0][0])
+
+    return last_id
+# -------------------------------------
+# get latest registration info from web
+# -------------------------------------
 session = requests.Session()
 
-# ------------------------------------
 # step 1: get latest registration info 
-# ------------------------------------
+
 login_data = {
     "sign_in_username": USER_NAME,
     "sign_in_password": PASSWORD 
@@ -29,21 +47,23 @@ csv_data = list(csv_reader)             # this is real registration data w/ head
 csv_header = csv_data[0]
 registration = csv_data[1:]
 
-# -------------------------------------------------------
 # step 2: get new record by compare previous record w/ ID
-# -------------------------------------------------------
+
+last_id = get_last_id()
 current_id = int(registration[0][0])   # the first record from the web page
 
 # compare and get new registration record
 if(current_id == last_id):
-    print("now new registration")
+    print("no new registration")
 else:
     new_registration = [
         row for row in registration if int(row[0]) > last_id
     ]
+    # new 'list' is w/ id, manufacturer, institution_name, institution_address, institution_location in each row
+    trimmed_registration = []             
+    for row in new_registration:
+        trimmed_registration.append(row[0:2] + row[13:16])
 
-trimmed_registration = []             # new 'list' is w/ id, manufacturer, institution_name, institution_address, institution_location in each row
-for row in new_registration:
-    trimmed_registration.append(row[0:2] + row[13:16])
+    print(trimmed_registration)
 
 # current status: now can catch new record compare w/ date 09/09 record
