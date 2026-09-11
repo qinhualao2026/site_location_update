@@ -1,7 +1,13 @@
 import pandas as pd
-import unicodedata, re
-from config import EXCEL_FILE
+import unicodedata, re, json, csv
+from pprint import pprint
+from config import EXCEL_FILE, WEB_SCRAP_FILE, GOOGLE_SITE_LIST
 
+# ------------------------------------------------------------------
+# data_unify.py is in order to simplify each data(table, sheet, ...)
+# and combine them into one data set(list of dict) w/ key:
+# institution_name, institution_address
+# ------------------------------------------------------------------
 
 # ----------------------
 # normalize 'None' value
@@ -76,7 +82,7 @@ def simple_excel_data(data_frame):
         ]
 
         full_address = normalize_address(', '.join(address_parts))
-        
+
         record = {
             'institution_name': normalize_name(row.get('Institution Name','')),
             'institution_address': full_address
@@ -86,22 +92,141 @@ def simple_excel_data(data_frame):
     
     return data
 
-# -------------------------------------
+# --------------------------------------
+# extract columns for new simple data
+# --------------------------------------
+def simple_json_data(json_data):
+    data = [] # list
+
+    for item in json_data:
+        record = {
+            'institution_name': 
+                normalize_name(item.get('name')),
+
+            'institution_address':
+                normalize_address(item.get('formatted_address'))
+        }
+
+        data.append(record)
+    
+    return data
+
+# --------------------------------------
+# extract columns for new simple data
+# --------------------------------------
+def simple_csv_data(csv_data):
+    data = [] # list
+
+    for item in csv_data:
+        record = {
+            'institution_name': 
+                normalize_name(item.get('institution_name')),
+
+            'institution_address':
+                normalize_address(item.get('normalized_address'))
+        }
+
+        data.append(record)
+    
+    return data
+
+# ------------------------
 # read and load excel file
-# -------------------------------------
+# ------------------------
 def load_excel_data(file):
     df = pd.read_excel(file, skiprows=[1]) # skip the template in the original excel file
     return simple_excel_data(df)
 
+# -----------------------
+# open and load json file
+# -----------------------
+def load_json_data(filename):
+    with open(filename, 'r', encoding='utf-8') as f:
+        json_data = json.load(f)
+    return simple_json_data(json_data)
 
+# ----------------------------------
+# open and google site list csv file
+# ----------------------------------
+def load_csv_file(filename):
+    with open(
+        filename, 
+        'r',
+        encoding='utf-8-sig'
+    ) as cache_file:
+        reader = csv.DictReader(cache_file)
+        data = list(reader)
 
+    return simple_csv_data(data) 
+
+# -----------------
+# delete duplicants
+# -----------------
+def delete_duplicate(data, key01, key02):
+    final_list = []
+
+    for item in data:
+        name = item[key01]
+        address = item[key02]
+
+        is_duplicate = False
+
+        for existing in final_list:
+            existing_name = existing[key01]
+            existing_address = existing[key02]
+
+            # institution name must be the same
+            if name != existing_name:
+                continue
+
+            # exact same address
+            if address == existing_address:
+                is_duplicate = True
+                break
+
+            # wildcard / substring address match
+            if (
+                address
+                and existing_address
+                and (
+                    address in existing_address
+                    or existing_address in address
+                )
+            ):
+                is_duplicate = True
+                break
+
+        if not is_duplicate:
+            final_list.append(item)
+
+    return final_list
 
 
 
 if __name__ == '__main__':
 
-    # simplified excel file
+    # simplified existed data
     simplified_site_list = load_excel_data(EXCEL_FILE)
+    simplified_web_scrap_list = load_json_data(WEB_SCRAP_FILE)
+    simplified_google_data = load_csv_file(GOOGLE_SITE_LIST)
 
-    print(type(simplified_site_list))
-    print(simplified_site_list[:2])
+    # clean each data
+    simplified_site_list_clean = delete_duplicate(simplified_site_list, "institution_name", "institution_address")
+    simplified_web_scrap_list_clean = delete_duplicate(simplified_web_scrap_list, "institution_name", "institution_address")
+    simplified_google_data_clean = delete_duplicate(simplified_google_data, "institution_name", "institution_address")
+
+    # combine three as one and clean it
+    combined_list = simplified_site_list_clean + simplified_web_scrap_list_clean + simplified_google_data_clean
+    unique_site_list = delete_duplicate(combined_list, "institution_name", "institution_address")
+
+
+    # ------------------------------------------test--------------------------------------------------#
+    print(f'number of simplified_site_list: {len(simplified_site_list)}')
+    print(f'number of simplified_site_list_clean: {len(simplified_site_list_clean)}')
+    print(f'number of simplified_web_scrap_list: {len(simplified_web_scrap_list)}')
+    print(f'number of simplified_web_scrap_list_clean: {len(simplified_web_scrap_list_clean)}')
+    print(f'number of simplified_google_data: {len(simplified_google_data)}')
+    print(f'number of simplified_google_data_clean: {len(simplified_google_data_clean)}')
+
+    print(f'number of combined_list: {len(combined_list)}')
+    print(f'number of unique_site_list: {len(unique_site_list)}')
