@@ -9,16 +9,12 @@ def get_last_id():
         'r', 
         encoding='utf-8-sig'
     ) as cache_file:
-
-        # skip table header
+        
         next(cache_file)
-
         reader = csv.reader(cache_file)
         data = list(reader)
 
-        last_id = int(data[0][0])
-
-    return last_id
+    return int(data[0][0])      # data[0][0] means the first element in the first row, which is the registration id value
 # -------------------------------------
 # get latest registration info from web
 # -------------------------------------
@@ -43,7 +39,7 @@ csv_class = StringIO(csv_response.text)
 csv_reader = csv.reader(csv_class)
 csv_data = list(csv_reader)             # this is real registration data w/ header
 
-# seperate header and content
+# separate header and content
 csv_header = csv_data[0]
 registration = csv_data[1:]
 
@@ -53,17 +49,22 @@ last_id = get_last_id()
 current_id = int(registration[0][0])   # the first record from the web page
 
 # compare and get new registration record
-if(current_id == last_id):
+
+# new 'list' is w/ id, manufacturer, institution_name, institution_address, institution_location in each row
+trimmed_registration = []
+
+if current_id == last_id:
     print("no new registration")
 else:
     new_registration = [
-        row for row in registration if int(row[0]) > last_id
+        row for row in registration if int(row[0]) > last_id        # compare occur here
     ]
-    # new 'list' is w/ id, manufacturer, institution_name, institution_address, institution_location in each row
+    
     trimmed_registration = []             
     for row in new_registration:
         trimmed_registration.append(row[0:2] + row[13:16])
 
-    print(trimmed_registration)
+print(trimmed_registration)     # for testing
 
 # current status: now can catch new record compare w/ date 09/09 record
+
