@@ -1,5 +1,6 @@
 import requests, csv
 from io import StringIO
+from pprint import pprint
 from config import USER_NAME, PASSWORD, LOGIN_URL,EXPORT_URL, LAST_REGISTRATION
 
 # read cache file and get the first ID value as the last id
@@ -62,9 +63,28 @@ else:
     
     trimmed_registration = []             
     for row in new_registration:
-        trimmed_registration.append(row[0:2] + row[13:16])
+        trimmed_registration.append(row[0:3] + row[13:17])
 
-print(trimmed_registration)     # for testing
+# convert list into list of dict 
+def convert_data(data):
+    result = [
+        {
+            "license_type": item[2],
+            "institution_name": item[3],
+            "institution_address": item[4],
+            "institution_location": item[5]
+        }
+        for item in data
+    ]
+
+    return result
+
+final_registration_data = convert_data(trimmed_registration)
+
+if __name__ == '__main__':
+    
+    print(f'new added number: {len(trimmed_registration)}')
+    pprint(final_registration_data)    
 
 # current status: now can catch new record compare w/ date 09/09 record
 
