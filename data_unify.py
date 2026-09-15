@@ -1,7 +1,8 @@
 import pandas as pd
 import unicodedata, re, json, csv
 from pprint import pprint
-from config import EXCEL_FILE, WEB_SCRAP_FILE, GOOGLE_SITE_LIST
+from config import EXCEL_FILE, WEB_SCRAP_FILE, GOOGLE_SITE_LIST, UPDATED_SITE_CACHE
+from cache_utils import load_json, save_json
 
 # ------------------------------------------------------------------
 # data_unify.py is in order to simplify each data(table, sheet, ...)
@@ -203,23 +204,32 @@ def delete_duplicate(data, key01, key02):
 
 
 
+
+# simplified existed data
+simplified_site_list = load_excel_data(EXCEL_FILE)
+simplified_web_scrap_list = load_json_data(WEB_SCRAP_FILE)
+simplified_google_data = load_csv_file(GOOGLE_SITE_LIST)
+
+# clean each data
+simplified_site_list_clean = delete_duplicate(simplified_site_list, "institution_name", "institution_address")
+simplified_web_scrap_list_clean = delete_duplicate(simplified_web_scrap_list, "institution_name", "institution_address")
+simplified_google_data_clean = delete_duplicate(simplified_google_data, "institution_name", "institution_address")
+
+# combine three as one and clean it
+combined_list = simplified_site_list_clean + simplified_web_scrap_list_clean + simplified_google_data_clean
+unique_site_list = delete_duplicate(combined_list, "institution_name", "institution_address")
+
+# initial site json data
+site_cache = load_json(UPDATED_SITE_CACHE)
+
+if not site_cache:
+    site_cache = unique_site_list.copy()
+    save_json(
+        site_cache,
+        UPDATED_SITE_CACHE
+    )
+
 if __name__ == '__main__':
-
-    # simplified existed data
-    simplified_site_list = load_excel_data(EXCEL_FILE)
-    simplified_web_scrap_list = load_json_data(WEB_SCRAP_FILE)
-    simplified_google_data = load_csv_file(GOOGLE_SITE_LIST)
-
-    # clean each data
-    simplified_site_list_clean = delete_duplicate(simplified_site_list, "institution_name", "institution_address")
-    simplified_web_scrap_list_clean = delete_duplicate(simplified_web_scrap_list, "institution_name", "institution_address")
-    simplified_google_data_clean = delete_duplicate(simplified_google_data, "institution_name", "institution_address")
-
-    # combine three as one and clean it
-    combined_list = simplified_site_list_clean + simplified_web_scrap_list_clean + simplified_google_data_clean
-    unique_site_list = delete_duplicate(combined_list, "institution_name", "institution_address")
-
-
     # ------------------------------------------test--------------------------------------------------#
     print(f'number of simplified_site_list: {len(simplified_site_list)}')
     print(f'number of simplified_site_list_clean: {len(simplified_site_list_clean)}')
@@ -229,4 +239,4 @@ if __name__ == '__main__':
     print(f'number of simplified_google_data_clean: {len(simplified_google_data_clean)}')
 
     print(f'number of combined_list: {len(combined_list)}')
-    print(f'number of unique_site_list: {len(unique_site_list)}')
+    print(f'number of unique_site_list: {len(unique_site_list)}') # initial site list: total number: 2874
