@@ -6,3 +6,6 @@ config.py
 
 # temp file
 cache_file/
+
+# python cache
+__pycache__/
