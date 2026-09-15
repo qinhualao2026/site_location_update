@@ -16,59 +16,14 @@ def get_last_id():
         data = list(reader)
 
     return int(data[0][0])      # data[0][0] means the first element in the first row, which is the registration id value
-# -------------------------------------
-# get latest registration info from web
-# -------------------------------------
-session = requests.Session()
 
-# step 1: get latest registration info 
-
-login_data = {
-    "sign_in_username": USER_NAME,
-    "sign_in_password": PASSWORD 
-} # form data may vary, check it out using dev tool on browser(F12)
-
-# login as admin 
-response = session.post(
-    LOGIN_URL,
-    data = login_data
-)
-
-# read all registration data
-csv_response = session.get(EXPORT_URL)
-csv_class = StringIO(csv_response.text)
-csv_reader = csv.reader(csv_class)
-csv_data = list(csv_reader)             # this is real registration data w/ header
-
-# separate header and content
-csv_header = csv_data[0]
-registration = csv_data[1:]
-
-# step 2: get new record by compare previous record w/ ID
-
-last_id = get_last_id()
-current_id = int(registration[0][0])   # the first record from the web page
-
-# compare and get new registration record
-
-# new 'list' is w/ id, manufacturer, institution_name, institution_address, institution_location in each row
-trimmed_registration = []
-
-if current_id == last_id:
-    print("no new registration")
-else:
-    new_registration = [
-        row for row in registration if int(row[0]) > last_id        # compare occur here
-    ]
-    
-    trimmed_registration = []             
-    for row in new_registration:
-        trimmed_registration.append(row[0:3] + row[13:17])
-
-# convert list into list of dict 
+# ------------------------------
+# convert list into list of dict
+# ------------------------------ 
 def convert_data(data):
     result = [
         {
+            "Manufacturer": item[1],
             "license_type": item[2],
             "institution_name": item[3],
             "institution_address": item[4],
@@ -79,12 +34,78 @@ def convert_data(data):
 
     return result
 
-final_registration_data = convert_data(trimmed_registration)
+# -------------------------------------
+# get latest registration info from web
+# -------------------------------------
+def get_new_registration_data():
 
+    session = requests.Session()
+
+    # step 1: get latest registration info 
+    login_data = {
+        "sign_in_username": USER_NAME,
+        "sign_in_password": PASSWORD 
+    }                                       # form data may vary, check it out using dev tool on browser(F12)
+
+    response = session.post(
+        LOGIN_URL,
+        data = login_data
+    )                                       # login as admin 
+
+    response.raise_for_status()             # request error exceptions
+
+    # read all registration data
+    csv_response = session.get(EXPORT_URL)
+    csv_response.raise_for_status()
+
+    csv_class = StringIO(csv_response.text)
+    csv_reader = csv.reader(csv_class)
+    csv_data = list(csv_reader)             # this is real registration data w/ header
+
+    # separate header and content
+    csv_header = csv_data[0]
+    registration = csv_data[1:]
+
+    # step 2: get new record by compare 
+    # previous record w/ ID
+    last_id = get_last_id()                # based on 09/08 web data; ID No.: 1817
+    current_id = int(registration[0][0])   # the first record from the web page
+
+    # no new registration
+    if current_id == last_id:
+        print("no new registration")
+        return [], current_id
+
+    # get new records newer than last_id
+    new_registration = [
+        row 
+        for row in registration 
+        if int(row[0]) > last_id          # compare occur here
+    ]
+        
+    trimmed_registration = []  
+
+    for row in new_registration:
+        trimmed_registration.append(row[0:3] + row[13:17])
+
+    final_registration_data = convert_data(trimmed_registration)
+
+    return (
+        final_registration_data, 
+        current_id                        # keep track of current id
+    )
+
+# ---------------------------------------test----------------------------------------
 if __name__ == '__main__':
     
-    print(f'new added number: {len(trimmed_registration)}')
-    pprint(final_registration_data)    
+    final_registration_data, current_id = (
+        get_new_registration_data()
+    )
 
-# current status: now can catch new record compare w/ date 09/09 record
+    print(f'new added number of site: {len(final_registration_data)}')
+    print(f'current ID: {current_id}')
+
+    pprint(final_registration_data)
+
+
 
