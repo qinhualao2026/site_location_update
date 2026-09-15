@@ -1,22 +1,22 @@
 import requests, csv
 from io import StringIO
 from pprint import pprint
-from config import USER_NAME, PASSWORD, LOGIN_URL,EXPORT_URL, LAST_REGISTRATION
+from cache_utils import load_json,save_json
+from config import USER_NAME, PASSWORD, LOGIN_URL,EXPORT_URL, LAST_ID_JSON
 
 # read cache file and get the first ID value as the last id
 def get_last_id():
-    with open(
-        LAST_REGISTRATION, 
-        'r', 
-        encoding='utf-8-sig'
-    ) as cache_file:
-        
-        next(cache_file)
-        reader = csv.reader(cache_file)
-        data = list(reader)
+    data = load_json(LAST_ID_JSON)
+    return int(data['last_id'])
 
-    return int(data[0][0])      # data[0][0] means the first element in the first row, which is the registration id value
-
+# --------------
+# update last id
+# --------------
+def update_last_id(current_id):
+    save_json(
+        {"last_id": current_id},
+        LAST_ID_JSON
+    )
 # ------------------------------
 # convert list into list of dict
 # ------------------------------ 
@@ -62,8 +62,7 @@ def get_new_registration_data():
     csv_reader = csv.reader(csv_class)
     csv_data = list(csv_reader)             # this is real registration data w/ header
 
-    # separate header and content
-    csv_header = csv_data[0]
+    # skip csv header and read from row01
     registration = csv_data[1:]
 
     # step 2: get new record by compare 
