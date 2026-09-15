@@ -56,7 +56,7 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
             # treat '---' as ''
             if name == "---":
                 name = ""
-                
+
             if address == "---":
                 address = ""
 
@@ -83,10 +83,10 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
             cache_key = query_text
             
             if cache_key in cache:
-                print(f'CACHE HIT: {cache_key}')
+                # print(f'CACHE HIT: {cache_key}')
                 result = cache[cache_key]
             else:
-                print(f"API CALL: {cache_key}")
+                # print(f"API CALL: {cache_key}")
                 try:
                     result = query_google_places(
                         query_text,
@@ -169,7 +169,7 @@ def correct_registration_data(data):
 
     return trimmed_data
 
-
+# --------------------------------------test----------------------------------------
 if __name__ == '__main__':
 
     from web_watch import get_new_registration_data
