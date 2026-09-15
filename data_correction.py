@@ -1,9 +1,9 @@
 import requests, time
 from tqdm import tqdm
 from pprint import pprint
-from cache_utils import load_cache, save_cache
+from cache_utils import load_json, save_json
 from config import GOOGLE_PLACES_API_KEY, GOOGLE_CACHE
-from web_watch import final_registration_data
+
 from data_unify import normalize_name, normalize_address
 
 # ----------------------------------------------
@@ -40,17 +40,29 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
         )
     }
 
-    cache = load_cache(GOOGLE_CACHE)
+    cache = load_json(GOOGLE_CACHE)
+
+    # keep current updating site list
+    current_results = {}
+
 
     with requests.Session() as session:
         for item in tqdm(data, desc="Looking up Google Place API:"):
 
             name = item.get("institution_name", "").strip()
             address = item.get('institution_address', "").strip()
+            location = item.get('institution_location', "").strip()
 
             # treat '---' as ''
+            if name == "---":
+                name = ""
+                
             if address == "---":
                 address = ""
+
+            # same as address
+            if location == "---":
+                location = ""
 
             # case #1: entity has no name and address
             if not name and not address:
@@ -58,21 +70,23 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
 
             # case #2: entity name and address
             if name and address:
-                query_text = f"{name} {address}"
+                query_text = f"{name} {address} {location}"
 
             # case #3: entity only has name
             elif name:
-                query_text = name
+                query_text = f'{name} {location}'
 
             # case #4: entity only has address
             else:
-                query_text = address
+                query_text = f'{address} {location}'
 
             cache_key = query_text
             
             if cache_key in cache:
+                print(f'CACHE HIT: {cache_key}')
                 result = cache[cache_key]
             else:
+                print(f"API CALL: {cache_key}")
                 try:
                     result = query_google_places(
                         query_text,
@@ -81,24 +95,27 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
                         headers
                     )
                     cache[cache_key] = result
-                    save_cache(cache, GOOGLE_CACHE)
+                    save_json(cache, GOOGLE_CACHE)
 
                     time.sleep(sleep_time)
 
                 except requests.RequestException as e:
-                    print(f'Google Place API request failed for {address}: {e}')
+                    print(f'Google Place API request failed for {query_text}: {e}')
 
                     result = {
                         'places': []
                     }
+            current_results[cache_key] = result
+
+    return current_results
 
 # --------------------------------
 # trim received google places data
 # --------------------------------
 
 TYPE_PRIORITY = [
-    "general_hospital",
     "hospital",
+    "general_hospital",
     "medical_clinic",
     "health"
 ]
@@ -137,14 +154,33 @@ def simplify_google_place_cache(cache):
 
     return simplified_data
 
+# ---------------------------
+# normalize and simplify data
+# ---------------------------
+def correct_registration_data(data):
+    # query Google Places
+    current_results = google_places_api_lookup(
+        data, 
+        GOOGLE_PLACES_API_KEY
+    )
+
+    # simplify Google Places cache data
+    trimmed_data = simplify_google_place_cache(current_results)
+
+    return trimmed_data
+
 
 if __name__ == '__main__':
 
-    # google_places_api_lookup(final_registration_data, GOOGLE_PLACES_API_KEY)
+    from web_watch import get_new_registration_data
 
-    # load google place cache 
-    cache = load_cache(GOOGLE_CACHE)
+    registration_data, current_id = (
+        get_new_registration_data()
+    )
 
-    # it will be using to compare w/ registration database(in data_unify.py)
-    trimmed_data = simplify_google_place_cache(cache)
+    print(f'current ID: {current_id}\ntotal # of new registration: {len(registration_data)}')
+
+    trimmed_data = correct_registration_data(registration_data)
+
+    print(f'correct sites: {len(trimmed_data)}')
     pprint(trimmed_data)
