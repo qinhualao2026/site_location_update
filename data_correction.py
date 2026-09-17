@@ -32,11 +32,10 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
         "Content-Type": "application/json",
         "X-Goog-Api-Key": api_key,
         "X-Goog-FieldMask": (
-            'places.formattedAddress,'
             'places.types,'
             'places.displayName,'
-            'places.addressDescriptor.landmarks.displayName,'
-            'places.addressDescriptor.landmarks.types'
+            'places.formattedAddress,'
+            'places.addressComponents,'
         )
     }
 
