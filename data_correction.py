@@ -41,9 +41,8 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
 
     cache = load_json(GOOGLE_CACHE)
 
-    # keep current updating site list
+    # store current updating site list
     current_results = {}
-
 
     with requests.Session() as session:
         for item in tqdm(data, desc="Looking up Google Place API:"):
@@ -63,21 +62,13 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
             if location == "---":
                 location = ""
 
-            # case #1: entity has no name and address
-            if not name and not address:
+            # generate query text for api search
+            query_text = " ".join(
+                value for value in [name, address, location] if value
+            )
+
+            if not query_text:
                 continue
-
-            # case #2: entity name and address
-            if name and address:
-                query_text = f"{name} {address} {location}"
-
-            # case #3: entity only has name
-            elif name:
-                query_text = f'{name} {location}'
-
-            # case #4: entity only has address
-            else:
-                query_text = f'{address} {location}'
 
             cache_key = query_text
             
@@ -133,9 +124,11 @@ def simplify_google_place_cache(cache):
 
     for query, result in cache.items():
         places = result.get("places", [])
+        
         if not places:
             continue
 
+        # find out place candidate
         best_place = select_best_place(places)
 
         if not best_place:
@@ -146,7 +139,8 @@ def simplify_google_place_cache(cache):
 
         record = {
             "institution_name": normalize_name(display_name),
-            "institution_address": normalize_address(formatted_address)
+            "institution_address": normalize_address(formatted_address),
+            "google_place": best_place
         }
 
         simplified_data.append(record)
@@ -182,4 +176,4 @@ if __name__ == '__main__':
     trimmed_data = correct_registration_data(registration_data)
 
     print(f'correct sites: {len(trimmed_data)}')
-    pprint(trimmed_data)
+    pprint(trimmed_data[0])
