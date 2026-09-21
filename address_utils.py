@@ -13,8 +13,10 @@ def get_address_component(
         if component_type in component.get("types",[]):
             return component.get(text_type, "")
 
+    return
+
 # parse site information into relative attribute
-def parse_plac_information(google_place):
+def parse_place_information(google_place):
     components = google_place.get("addressComponents", [])
 
     # seperate address 
@@ -42,25 +44,25 @@ def parse_plac_information(google_place):
         "Address 1": address_1,
         "Address 2": "",
         "City": city,
-        "State/Province": state,
+        "State/\nProvince": state,
         "Zip/Postal Code": zip_code,
         "Country": country
     }
 
 def parse_new_us_site(current_new_sites):
-    parse_sites = []
+    parsed_sites = []
 
     for item in current_new_sites:
         google_place = item.get("google_place", {})
 
-        parsed_place = parse_plac_information(google_place)
+        parsed_place = parse_place_information(google_place)
 
         if not parsed_place:
             continue
 
-        parse_sites.append(parsed_place)
+        parsed_sites.append(parsed_place)
 
-    return parse_sites
+    return parsed_sites
 
 # ----------------------------------test-----------------------------
 if __name__ == "__main__":
