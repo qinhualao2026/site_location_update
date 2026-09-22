@@ -132,7 +132,7 @@ def simplify_google_place_cache(cache):
         best_place = select_best_place(places)
 
         if not best_place:
-            continue
+            best_place = places[0] # if have no key_word in types{}, select the 1st one the list
 
         display_name = best_place.get("displayName", {}).get("text", "")
         formatted_address = best_place.get("formattedAddress", "")
@@ -140,6 +140,8 @@ def simplify_google_place_cache(cache):
         record = {
             "institution_name": normalize_name(display_name),
             "institution_address": normalize_address(formatted_address),
+
+            # take google place dict data for address parse
             "google_place": best_place
         }
 
@@ -176,4 +178,4 @@ if __name__ == '__main__':
     trimmed_data = correct_registration_data(registration_data)
 
     print(f'correct sites: {len(trimmed_data)}')
-    pprint(trimmed_data[0])
+    pprint(trimmed_data)
