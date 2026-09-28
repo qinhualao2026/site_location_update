@@ -13,31 +13,57 @@ def get_address_component(
         if component_type in component.get("types",[]):
             return component.get(text_type, "")
 
-    return
+    return ""
 
 # parse site information into relative attribute
 def parse_place_information(google_place):
     components = google_place.get("addressComponents", [])
 
-    # seperate address 
-    street_number = get_address_component(components, "street_number")
-    street = get_address_component(components, "route")
+    # common address 
     city = get_address_component(components, "locality")
     state = get_address_component(components, "administrative_area_level_1")
     zip_code = get_address_component(components, "postal_code")
     country = get_address_component(components, "country")
 
-    # only US address
-    if country != "US":
-        return None
-
     institution_name = (
         google_place.get("displayName", {}).get("text", "")
     )
 
-    address_1 = " ".join(
-        value for value in [street_number, street] if value
-    )
+    # for U.S. site location:
+    if country == 'US':
+        street_number = get_address_component(components, "street_number")
+        street = get_address_component(components, "route")
+
+        address_1 = " ".join(
+            value for value in [street_number, street] if value
+        )
+    # other countries:
+    else:
+        state = get_address_component(components, "administrative_area_level_1", "longText")
+        country = get_address_component(components, "country", "longText")
+
+        address_parts = []
+
+        for component in components:
+            types = component.get("types", [])
+            
+            # skip common address parts
+            if any(
+                address_type in types for address_type in [
+                    "locality",
+                    "administrative_area_level_1",
+                    "postal_code",
+                    "country"
+                ]
+            ):
+                continue
+
+            value = component.get("longText", "")
+
+            if value:
+                address_parts.append(value)
+
+        address_1 = ", ".join(address_parts)
 
     return {
         "Institution Name": institution_name,
@@ -68,7 +94,7 @@ def parse_new_us_site(current_new_sites):
 if __name__ == "__main__":
     from web_watch import get_new_registration_data
     from data_correction import correct_registration_data
-    from data_compare import update_site_data
+    from data_compare import find_new_sites
     from pprint import pprint
 
     registration_data, current_id = (
@@ -79,7 +105,7 @@ if __name__ == "__main__":
         registration_data
     )
 
-    current_new_sites = update_site_data(
+    current_new_sites = find_new_sites(
         corrected_data
     )
 
