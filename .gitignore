@@ -9,3 +9,6 @@ cache_file/
 
 # python cache
 __pycache__/
+
+# output file
+output/
