@@ -270,7 +270,7 @@ if __name__ == "__main__":
     print(len(ge_site_list))
 
     # down the list # to 20 for testing
-    sliced_ge_site_list = ge_site_list[: 100]
+    sliced_ge_site_list = ge_site_list[: 105]
     
     # using google places api 
     test_results = google_places_api_lookup_GE(sliced_ge_site_list, GOOGLE_PLACES_API_KEY)
