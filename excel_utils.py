@@ -1,5 +1,6 @@
 import openpyxl
 from data_unify import normalize_none_value
+from config import GE_KEY_FIELDS, MRE_KEY_FIELDS
 # get header info
 def get_sheet_header(sheet):
     header_dict = {}
@@ -10,22 +11,50 @@ def get_sheet_header(sheet):
 
     return header_dict
 
+# store fields as tuple
+def make_site_key(site, key_fields):
+    values = []
+
+    for field in key_fields:
+        value = normalize_none_value(site.get(field))
+        values.append(value.casefold())
+
+    return tuple(values)
+    
+
 # set existing site names in .xlsx file
-def get_existing_site_names(sheet, name_column):
-    exising_names = set()
+def get_existing_site_keys(sheet, header_dict, key_fields):
+
+    # make sure no fields in sheet column is missing
+    missing_fields = [
+        field
+        for field in key_fields if field not in header_dict
+    ]
+
+    if missing_fields:
+        raise ValueError(
+            f"Missing Excel headers: {missing_fields}"
+        )
+
+    # generate existing site for later comparison
+    # each item in the set here is 'tuple'
+    existing_names = set()
 
     for row_number in range(2, sheet.max_row + 1):
-        value = sheet.cell(
-            row = row_number,
-            column = name_column
-        ).value
+        site = {
+            field: sheet.cell(
+                row = row_number,
+                column = header_dict[field],
+            ).value
+            for field in key_fields
+        }
 
-        name = normalize_none_value(value)
+        site_key = make_site_key(site, key_fields)
 
-        if name:
-            exising_names.add(name)
+        if site_key:
+            existing_names.add(site_key)
 
-    return exising_names
+    return existing_names
 
 # write parsed places info into GE .xlsx file
 def write_site_to_excel_GE(parsed_place, file_path):
@@ -35,36 +64,38 @@ def write_site_to_excel_GE(parsed_place, file_path):
         sheet = wb["Master"]
         header_dict = get_sheet_header(sheet)
 
-        unique_field = "GE Provided Institution Name"
-        name_column = header_dict[unique_field]
-
-        existing_names = get_existing_site_names(sheet, name_column)
+        exsiting_keys = get_existing_site_keys(
+            sheet,
+            header_dict,
+            GE_KEY_FIELDS
+        )
 
         new_row  = sheet.max_row + 1
 
         for site in parsed_place:
-            site_name = normalize_none_value(
-                site.get(unique_field)
+            site_keys = make_site_key(
+                site,
+                GE_KEY_FIELDS
             )
 
-            if not site_name:
+            if not site_keys[0]:
                 raise ValueError(
-                    f"Missing value for: {unique_field}"
+                    f"Missing value for: GE Provided Institution Name"
                 ) 
 
-            if site_name in existing_names:
+            # prevent duplicants
+            if site_keys in exsiting_keys:
                 continue
 
-
-            for key, value in site.items():
-                column = header_dict[key]
+            for field, value in site.items():
+                column = header_dict[field]
                 sheet.cell(
                     row = new_row,
                     column = column, 
                     value = value
                 )
 
-            existing_names.add(site_name)
+            exsiting_keys.add(site_keys)
             new_row += 1
 
         wb.save(file_path) 
@@ -73,32 +104,53 @@ def write_site_to_excel_GE(parsed_place, file_path):
         wb.close()                      
 
 
-
 # write parsed address info into excel file
 def write_site_to_excel(parsed_place, file_path):
 
-    # load xlsx file here in the function
     wb = openpyxl.load_workbook(file_path)
-    sheet = wb['Master']
 
-    header_dict = get_sheet_header(sheet)
+    try:
+        sheet = wb['Master']
+        header_dict = get_sheet_header(sheet)
 
-    new_row  = sheet.max_row + 1
+        existing_keys = get_existing_site_keys(
+            sheet,
+            header_dict,
+            MRE_KEY_FIELDS
+        )
 
-    print(f"sheet.max_row: {sheet.max_row}")
-    
-    for site in parsed_place:
-        for key, value in site.items():
-            column = header_dict[key]
-            sheet.cell(
-                row = new_row,
-                column = column, 
-                value = value
+        new_row  = sheet.max_row + 1
+        
+        for site in parsed_place:
+            site_keys = make_site_key(
+                site,
+                MRE_KEY_FIELDS
             )
 
-        new_row += 1
+            if not site_keys[0]:
+                raise ValueError(
+                    f"Missing column: Institution Name"
+                )
 
-    wb.save(file_path)     
+            if site_keys in existing_keys:
+                continue
+            
+            for field, value in site.items():
+                column = header_dict[field]
+                sheet.cell(
+                    row = new_row,
+                    column = column, 
+                    value = value
+                )
+
+            existing_keys.add(site_keys)
+            new_row += 1
+
+        wb.save(file_path)
+
+    finally:
+        wb.close()  
+ 
 # -------------------------test-------------------------
 if __name__ == "__main__":
     from web_watch import get_new_registration_data
@@ -124,8 +176,7 @@ if __name__ == "__main__":
         current_new_sites
     )
 
-    # test write site info into the spreadsheet
-    # write_site_to_excel(new_parsed_site_list)
+
 
 
 
