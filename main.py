@@ -5,6 +5,7 @@ from data_correction import correct_registration_data
 from data_compare import find_new_sites, update_site_cache
 from address_utils import parse_new_site
 from excel_utils import write_site_to_excel
+from config import MRE_SITE_LIST
 
 def main():
     # step 1: get new registration data
@@ -38,7 +39,7 @@ def main():
     )
 
     # write parsed address info into excel file
-    write_site_to_excel(parsed_site_list)
+    write_site_to_excel(parsed_site_list, MRE_SITE_LIST)
 
     # step 5: update site cache
     update_site_cache(new_sites)

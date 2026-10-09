@@ -75,7 +75,7 @@ def parse_place_information(google_place):
         "Country": country
     }
 
-def parse_new_us_site(current_new_sites):
+def parse_new_site(current_new_sites):
     parsed_sites = []
 
     for item in current_new_sites:
