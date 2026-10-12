@@ -29,6 +29,13 @@ def parse_place_information(google_place):
         google_place.get("displayName", {}).get("text", "")
     )
 
+    latitude = (
+        google_place.get("location", {}).get("latitude", "")
+    )
+    longitude = (
+        google_place.get("location", {}).get("longitude", "")
+    )
+
     # for U.S. site location:
     if country == 'US':
         street_number = get_address_component(components, "street_number")
@@ -72,7 +79,9 @@ def parse_place_information(google_place):
         "City": city,
         "State/\nProvince": state,
         "Zip/Postal Code": zip_code,
-        "Country": country
+        "Country": country,
+        "Latitude": latitude,
+        "Longitude": longitude
     }
 
 def parse_new_site(current_new_sites):
@@ -109,7 +118,7 @@ if __name__ == "__main__":
         corrected_data
     )
 
-    new_parsed_site_list = parse_new_us_site(
+    new_parsed_site_list = parse_new_site(
         current_new_sites
     )
 

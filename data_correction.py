@@ -27,7 +27,7 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
 
     url = 'https://places.googleapis.com/v1/places:searchText'
 
-    # add on new fieldmask to get 'places.displayName' 
+    # field returned from Google Places API 
     headers = {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": api_key,
@@ -36,6 +36,7 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
             'places.displayName,'
             'places.formattedAddress,'
             'places.addressComponents,'
+            'places.location'                     # geo tag: latitude, longitude
         )
     }
 
@@ -71,12 +72,13 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
                 continue
 
             cache_key = query_text
-            
+
+            # check query text existed in google places cache file
             if cache_key in cache:
-                # print(f'CACHE HIT: {cache_key}')
+                # print(f'CACHE HIT: {cache_key}')  # for testing 
                 result = cache[cache_key]
             else:
-                # print(f"API CALL: {cache_key}")
+                # print(f"API CALL: {cache_key}")   # for testing
                 try:
                     result = query_google_places(
                         query_text,
@@ -122,7 +124,7 @@ def select_best_place(places):
 def simplify_google_place_cache(cache):
     simplified_data = []
 
-    for query, result in cache.items():
+    for  result in cache.values():
         places = result.get("places", [])
         
         if not places:
@@ -166,7 +168,7 @@ def correct_registration_data(data):
 
 # --------------------------------------test----------------------------------------
 if __name__ == '__main__':
-
+    
     from web_watch import get_new_registration_data
 
     registration_data, current_id = (

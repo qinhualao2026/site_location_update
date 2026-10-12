@@ -152,7 +152,7 @@ def google_places_api_lookup_GE(data, api_key, sleep_time=1):
 
             # check query text existed in google places cache file
             if cache_key in cache:
-                print(f'CACHE HIT: {cache_key}')  # for testing 
+                # print(f'CACHE HIT: {cache_key}')  # for testing 
                 result = cache[cache_key]
             else:
                 #  print(f"API CALL: {cache_key}")   # for testing
@@ -270,7 +270,7 @@ if __name__ == "__main__":
     print(len(ge_site_list))
 
     # down the list # to 20 for testing
-    sliced_ge_site_list = ge_site_list[: 105]
+    sliced_ge_site_list = ge_site_list[: 2500]
     
     # using google places api 
     test_results = google_places_api_lookup_GE(sliced_ge_site_list, GOOGLE_PLACES_API_KEY)
