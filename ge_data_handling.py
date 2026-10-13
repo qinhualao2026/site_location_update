@@ -7,11 +7,12 @@ from cache_utils import load_json, save_json
 from data_correction import query_google_places, select_best_place
 from address_utils import get_address_component
 from excel_utils import write_site_to_excel_GE
+from pprint import pprint
 
 # this function is in order to get site names from existing excel file
-def get_site_names(file_path, attribute):
+def get_site_names(file_path, attribute, sheet_name):
     wb = openpyxl.load_workbook(file_path)
-    sheet = wb["Export"]
+    sheet = wb[sheet_name]
 
     site_name_column = None
 
@@ -262,18 +263,18 @@ def parse_place_dict(cache):
 
 if __name__ == "__main__":
     
-    ge_site_list = get_site_names(GE_EXCEL_FILE, "Site Name")
+    ge_site_list = get_site_names(GE_EXCEL_FILE, "Site Name", "Export")
     print(len(ge_site_list))
 
     # delete duplicants and sort the list
     ge_site_list = sorted(set(ge_site_list))
     print(len(ge_site_list))
-
+    
     # down the list # to 20 for testing
-    sliced_ge_site_list = ge_site_list[: 2500]
+    # sliced_ge_site_list = ge_site_list[: 3000]
     
     # using google places api 
-    test_results = google_places_api_lookup_GE(sliced_ge_site_list, GOOGLE_PLACES_API_KEY)
+    test_results = google_places_api_lookup_GE(ge_site_list, GOOGLE_PLACES_API_KEY)
     
     # load Google Places API cache file
     ge_google_cache_data = load_json(GE_GOOGLE_CACHE_FILE)
@@ -286,4 +287,22 @@ if __name__ == "__main__":
 
     # write proecessed information into .xlsx file
     write_site_to_excel_GE(parsed_site_list, TEMP_GE_SITE_LIST)
+    
+
+    # ------------------------data integrity check-------------------
+
+    # check total number of lists
+    finished_lists = get_site_names(TEMP_GE_SITE_LIST, "GE Provided Institution Name", "Master")
+    print(f"finished number of lists in total: {len(finished_lists)}")
+    finished_lists = sorted(set(finished_lists))
+    print(f"total numbers are the same?: {len(finished_lists) == len(ge_site_list)}")
+
+    # check which institution is not on the finished list
+    missing_lists = []
+    for site_name in ge_site_list:
+        if site_name not in finished_lists:
+            missing_lists.append(site_name)
+    print(f"total number of missing list: {len(missing_lists)}")
+    print(missing_lists)
+
     
