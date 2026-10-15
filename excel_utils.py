@@ -1,13 +1,14 @@
 import openpyxl
 from data_unify import normalize_none_value
-from config import GE_KEY_FIELDS, MRE_KEY_FIELDS
+from config import GE_KEY_FIELDS, MRE_KEY_FIELDS, MRE_SITE_LIST
 # get header info
 def get_sheet_header(sheet):
+    # this will be like: name: 1, address: 2,...
     header_dict = {}
 
     for cell in sheet[1]:
-        if cell.value:
-            header_dict[cell.value] = cell.column
+        if cell.value:                              # it will be column name
+            header_dict[cell.value] = cell.column   # it will be column number
 
     return header_dict
 
@@ -176,7 +177,7 @@ if __name__ == "__main__":
         current_new_sites
     )
 
-
+    write_site_to_excel(new_parsed_site_list, MRE_SITE_LIST)
 
 
 

@@ -35,6 +35,9 @@ def parse_place_information(google_place):
     longitude = (
         google_place.get("location", {}).get("longitude", "")
     )
+    phone_number = (
+        google_place.get("internationalPhoneNumber", "")
+    )
 
     # for U.S. site location:
     if country == 'US':
@@ -81,7 +84,8 @@ def parse_place_information(google_place):
         "Zip/Postal Code": zip_code,
         "Country": country,
         "Latitude": latitude,
-        "Longitude": longitude
+        "Longitude": longitude,
+        "Institution Phone": phone_number
     }
 
 def parse_new_site(current_new_sites):

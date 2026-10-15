@@ -93,4 +93,4 @@ if __name__ == '__main__':
 
     print(f'current ID: {current_id}')
     print(f'total # of new sites found: {len(current_new_sites)}')
-    pprint(current_new_sites)
+    # pprint(current_new_sites)

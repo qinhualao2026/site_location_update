@@ -2,7 +2,7 @@ import requests, time
 from tqdm import tqdm
 from pprint import pprint
 from cache_utils import load_json, save_json
-from config import GOOGLE_PLACES_API_KEY, GOOGLE_CACHE
+from config import GOOGLE_PLACES_API_KEY, GOOGLE_CACHE, GOOGLE_MASTER_SHEET_HEADER
 
 from data_unify import normalize_name, normalize_address
 
@@ -23,22 +23,9 @@ def query_google_places(query_text, session, url, headers):
     response.raise_for_status()
     return response.json()
 
-def google_places_api_lookup(data, api_key, sleep_time=1):
+def google_places_api_lookup(data, google_api_header, sleep_time=1):
 
     url = 'https://places.googleapis.com/v1/places:searchText'
-
-    # field returned from Google Places API 
-    headers = {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": api_key,
-        "X-Goog-FieldMask": (
-            'places.types,'
-            'places.displayName,'
-            'places.formattedAddress,'
-            'places.addressComponents,'
-            'places.location'                     # geo tag: latitude, longitude
-        )
-    }
 
     cache = load_json(GOOGLE_CACHE)
 
@@ -84,7 +71,7 @@ def google_places_api_lookup(data, api_key, sleep_time=1):
                         query_text,
                         session,
                         url,
-                        headers
+                        google_api_header
                     )
                     cache[cache_key] = result
                     save_json(cache, GOOGLE_CACHE)
@@ -158,7 +145,7 @@ def correct_registration_data(data):
     # query Google Places
     current_results = google_places_api_lookup(
         data, 
-        GOOGLE_PLACES_API_KEY
+        GOOGLE_MASTER_SHEET_HEADER
     )
 
     # simplify Google Places cache data
