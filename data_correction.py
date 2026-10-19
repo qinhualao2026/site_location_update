@@ -35,6 +35,11 @@ def google_places_api_lookup(data, google_api_header, sleep_time=1):
     with requests.Session() as session:
         for item in tqdm(data, desc="Looking up Google Place API:"):
 
+            # keep manufacturer and license type information
+            manufacturer = item.get("Manufacturer", "").strip()
+            license_type = item.get("license_type", "").strip()
+
+            # query text
             name = item.get("institution_name", "").strip()
             address = item.get('institution_address', "").strip()
             location = item.get('institution_location', "").strip()
@@ -84,7 +89,11 @@ def google_places_api_lookup(data, google_api_header, sleep_time=1):
                     result = {
                         'places': []
                     }
-            current_results[cache_key] = result
+            current_results[cache_key] = {
+                **result,
+                "Manufacturer": manufacturer,
+                "License_type": license_type
+            }
 
     return current_results
 
@@ -129,6 +138,8 @@ def simplify_google_place_cache(cache):
         record = {
             "institution_name": normalize_name(display_name),
             "institution_address": normalize_address(formatted_address),
+            "Manufacturer": result.get("Manufacturer", ""),
+            "License_type": result.get("License_type", ""),
 
             # take google place dict data for address parse
             "google_place": best_place
