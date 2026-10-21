@@ -39,55 +39,55 @@ def convert_data(data):
 # -------------------------------------
 def get_new_registration_data():
 
-    session = requests.Session()
+    with requests.Session() as session:
 
-    # step 1: get latest registration info 
-    login_data = {
-        "sign_in_username": USER_NAME,
-        "sign_in_password": PASSWORD 
-    }                                       # form data may vary, check it out using dev tool on browser(F12)
+        # step 1: get latest registration info 
+        login_data = {
+            "sign_in_username": USER_NAME,
+            "sign_in_password": PASSWORD 
+        }                                       # form data may vary, check it out using dev tool on browser(F12)
 
-    response = session.post(
-        LOGIN_URL,
-        data = login_data
-    )                                       # login as admin 
+        response = session.post(
+            LOGIN_URL,
+            data = login_data
+        )                                       # login as admin 
 
-    response.raise_for_status()             # request error exceptions
+        response.raise_for_status()             # request error exceptions
 
-    # read all registration data
-    csv_response = session.get(EXPORT_URL)
-    csv_response.raise_for_status()
+        # read all registration data
+        csv_response = session.get(EXPORT_URL)
+        csv_response.raise_for_status()
 
-    csv_class = StringIO(csv_response.text)
-    csv_reader = csv.reader(csv_class)
-    csv_data = list(csv_reader)             # this is real registration data w/ header
+        csv_class = StringIO(csv_response.text)
+        csv_reader = csv.reader(csv_class)
+        csv_data = list(csv_reader)             # this is real registration data w/ header
 
-    # skip csv header and read from row01
-    registration = csv_data[1:]
+        # skip csv header and read from row01
+        registration = csv_data[1:]
 
-    # step 2: get new record by compare 
-    # previous record w/ ID
-    last_id = get_last_id()                # based on 09/08 web data; ID No.: 1817
-    current_id = int(registration[0][0])   # the first record from the web page
+        # step 2: get new record by compare 
+        # previous record w/ ID
+        last_id = get_last_id()                # based on 09/08 web data; ID No.: 1817
+        current_id = int(registration[0][0])   # the first record from the web page
 
-    # no new registration
-    if current_id == last_id:
-        print("no new registration")
-        return [], current_id
+        # no new registration
+        if current_id == last_id:
+            print("no new registration")
+            return [], current_id
 
-    # get new records newer than last_id
-    new_registration = [
-        row 
-        for row in registration 
-        if int(row[0]) > last_id          # compare occur here
-    ]
-        
-    trimmed_registration = []  
+        # get new records newer than last_id
+        new_registration = [
+            row 
+            for row in registration 
+            if int(row[0]) > last_id          # compare occur here
+        ]
+            
+        trimmed_registration = []  
 
-    for row in new_registration:
-        trimmed_registration.append(row[0:3] + row[13:17])
+        for row in new_registration:
+            trimmed_registration.append(row[0:3] + row[13:17])
 
-    final_registration_data = convert_data(trimmed_registration)
+        final_registration_data = convert_data(trimmed_registration)
 
     return (
         final_registration_data, 
