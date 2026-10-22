@@ -20,19 +20,31 @@ def update_last_id(current_id):
 # ------------------------------
 # convert list into list of dict
 # ------------------------------ 
-def convert_data(data):
+def convert_data(data, header_dict):
     result = [
         {
-            "Manufacturer": item[1],
-            "license_type": item[2],
-            "institution_name": item[3],
-            "institution_address": item[4],
-            "institution_location": item[5]
+            "Manufacturer": item[header_dict["Manufacturer"]],
+            "license_type": item[header_dict["License Type"]],
+            "institution_name": item[header_dict["Institution Name"]],
+            "institution_address": item[header_dict["Institution Address"]],
+            "institution_location": item[header_dict["Institution Location"]],
+            "IsDeleted": item[header_dict["IsDeleted"]]
         }
         for item in data
     ]
 
     return result
+
+# ------------------
+# create header dict
+# ------------------
+def csv_header_dict(csv_reader):
+    
+    headers = next(csv_reader)  # it will read the first row of csv file
+    header_dict = {
+        name: index for index, name in enumerate(headers)
+    }
+    return header_dict
 
 # -------------------------------------
 # get latest registration info from web
@@ -49,26 +61,31 @@ def get_new_registration_data():
 
         response = session.post(
             LOGIN_URL,
-            data = login_data
+            data = login_data,
+            timeout = 30
         )                                       # login as admin 
 
         response.raise_for_status()             # request error exceptions
 
         # read all registration data
-        csv_response = session.get(EXPORT_URL)
+        csv_response = session.get(
+            EXPORT_URL,
+            timeout = 15
+        )
         csv_response.raise_for_status()
 
         csv_class = StringIO(csv_response.text)
         csv_reader = csv.reader(csv_class)
-        csv_data = list(csv_reader)             # this is real registration data w/ header
 
-        # skip csv header and read from row01
-        registration = csv_data[1:]
+        # create header dict
+        header_dict = csv_header_dict(csv_reader)
+
+        registration = list(csv_reader)
 
         # step 2: get new record by compare 
         # previous record w/ ID
         last_id = get_last_id()                # based on 09/08 web data; ID No.: 1817
-        current_id = int(registration[0][0])   # the first record from the web page
+        current_id = int(registration[0][header_dict["ID"]])   # the first record from the web page
 
         # no new registration
         if current_id == last_id:
@@ -76,24 +93,23 @@ def get_new_registration_data():
             return [], current_id
 
         # get new records newer than last_id
-        new_registration = [
-            row 
-            for row in registration 
-            if int(row[0]) > last_id          # compare occur here
-        ]
+        new_registration = []
+
+        for row in registration:
+            if int(row[header_dict["ID"]]) <= last_id:
+                break
+
+            new_registration.append(row)
             
-        trimmed_registration = []  
-
-        for row in new_registration:
-            trimmed_registration.append(row[0:3] + row[13:17])
-
-        final_registration_data = convert_data(trimmed_registration)
+        final_registration_data = convert_data(
+            new_registration, 
+            header_dict
+        )
 
     return (
         final_registration_data, 
         current_id                        # keep track of current id
     )
-
 # ---------------------------------------test----------------------------------------
 if __name__ == '__main__':
     
@@ -105,6 +121,4 @@ if __name__ == '__main__':
     print(f'current ID: {current_id}')
 
     pprint(final_registration_data)
-
-
 
