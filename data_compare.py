@@ -29,10 +29,15 @@ def find_new_sites(data):
     for item in data:
         # compare w/ database 
         if is_duplicate(item, all_site_list):
+            
+            print(
+                "Skipped existing site: "
+                f"{item['institution_name']} | "
+                f"{item['institution_address']}"
+            )
             continue
 
         # Currently, this function only checks against previous site records.
-        # Duplicates within the passed-in data are not detected.
 
         current_new_sites.append(item)
 
@@ -93,4 +98,4 @@ if __name__ == '__main__':
 
     print(f'current ID: {current_id}')
     print(f'total # of new sites found: {len(current_new_sites)}')
-    # pprint(current_new_sites)
+    pprint(current_new_sites)
