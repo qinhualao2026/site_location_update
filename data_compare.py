@@ -1,6 +1,10 @@
+import logging
+
 from config import UPDATED_SITE_CACHE, NEW_SITE_LIST_CACHE
 from cache_utils import load_json, save_json
 from pprint import pprint
+
+logger = logging.getLogger(__name__)
 
 def is_duplicate(item, existing_list):
     name = item["institution_name"]
@@ -30,7 +34,7 @@ def find_new_sites(data):
         # compare w/ database 
         if is_duplicate(item, all_site_list):
             
-            print(
+            logger.info(
                 "Skipped existing site: "
                 f"{item['institution_name']} | "
                 f"{item['institution_address']}"
