@@ -12,3 +12,6 @@ __pycache__/
 
 # output file
 output/
+
+# loging file
+logs/
