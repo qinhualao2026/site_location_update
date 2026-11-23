@@ -244,7 +244,3 @@ if __name__ == "__main__":
     )
 
     write_site_to_excel(new_parsed_site_list, MRE_SITE_LIST)
-
-
-
-

@@ -2,8 +2,10 @@ import requests, time
 from tqdm import tqdm
 from pprint import pprint
 from cache_utils import load_json, save_json
-from config import GOOGLE_PLACES_API_KEY, GOOGLE_CACHE, GOOGLE_MASTER_SHEET_HEADER
-
+from config import (
+    GOOGLE_CACHE, 
+    GOOGLE_MASTER_SHEET_HEADER
+)
 from data_unify import normalize_name, normalize_address
 
 # ----------------------------------------------
@@ -30,7 +32,7 @@ def google_places_api_lookup(data, google_api_header, sleep_time=1):
     cache = load_json(GOOGLE_CACHE)
 
     # store current updating site list
-    current_results = {}
+    current_results = []
 
     with requests.Session() as session:
         for item in tqdm(data, desc="Looking up Google Place API:"):
@@ -43,6 +45,8 @@ def google_places_api_lookup(data, google_api_header, sleep_time=1):
             name = item.get("institution_name", "").strip()
             address = item.get('institution_address', "").strip()
             location = item.get('institution_location', "").strip()
+
+            is_deleted = str(item.get("IsDeleted", "")).strip()
 
             # treat '---' as ''
             if name == "---":
@@ -60,7 +64,7 @@ def google_places_api_lookup(data, google_api_header, sleep_time=1):
                 value for value in [name, address, location] if value
             )
 
-            if not query_text:
+            if not query_text or is_deleted == "1":
                 continue
 
             cache_key = query_text
@@ -79,9 +83,9 @@ def google_places_api_lookup(data, google_api_header, sleep_time=1):
                         google_api_header
                     )
                     cache[cache_key] = result
-                    save_json(cache, GOOGLE_CACHE)
 
-                    time.sleep(sleep_time)
+                    # save new google api data in cache file
+                    save_json(cache, GOOGLE_CACHE)
 
                 except requests.RequestException as e:
                     print(f'Google Place API request failed for {query_text}: {e}')
@@ -89,11 +93,16 @@ def google_places_api_lookup(data, google_api_header, sleep_time=1):
                     result = {
                         'places': []
                     }
-            current_results[cache_key] = {
+
+                finally:
+                    time.sleep(sleep_time)
+
+            current_results.append({
+                "query_text": query_text,
                 **result,
                 "Manufacturer": manufacturer,
                 "License_type": license_type
-            }
+            })
 
     return current_results
 
@@ -117,10 +126,10 @@ def select_best_place(places):
                 return place
 
 # convert picked data to list of dict
-def simplify_google_place_cache(cache):
+def simplify_google_place_cache(results):
     simplified_data = []
 
-    for  result in cache.values():
+    for  result in results:
         places = result.get("places", [])
         
         if not places:

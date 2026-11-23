@@ -8,6 +8,7 @@ from address_utils import parse_new_site
 from excel_utils import write_site_to_excel
 from config import MRE_SITE_LIST
 
+# add logger obj for monitoring program
 logger = logging.getLogger(__name__)
 
 def main():
@@ -32,7 +33,7 @@ def main():
     new_sites = find_new_sites(corrected_data)
 
     logger.info(f'# of new sites added: {len(new_sites)}')
-    logger.info(f'New sites: {new_sites}')
+    # logger.info(f'New sites: {new_sites}')
 
     # ---------------------------parse address into excel spreadsheet -----------
     

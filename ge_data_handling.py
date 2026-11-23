@@ -16,7 +16,7 @@ def get_site_names(file_path, attribute, sheet_name):
 
     site_name_column = None
 
-    for cell in sheet[1]:
+    for cell in sheet[1]:                    # means cell in the 1st row of this sheet
         if cell.value == attribute:
             site_name_column = cell.column
             break
